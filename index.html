@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            --background-color: #ECECEC;
+            --text-color: #242424;
+            --input-border-color: #6E9BDD;
+            --input-outline-color: #7AA7E9;
+            --button-color: rgba(0, 0, 0, .1);
+            --button-color-hover: rgba(0, 0, 0, .2);
+
+            --link-color: #428EE1;
+            --link-color-hover: #7094FF;
+            --link-color-focus: #FC4741;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                --background-color: #202021;
+                --text-color: #FCFCFC;
+                --input-border-color: #4888B1;
+                --input-outline-color: #33739D;
+                --button-color: rgba(252, 252, 252, .1);
+                --button-color-hover: rgba(252, 252, 252, .2);
+            }
+        }
+        body {
+            font-family: -apple-system, "BlinkMacSystemFont", "Raleway", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+            font-feature-settings: "liga" 0;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background: var(--background-color);
+            color: var(--text-color);
+        }
+        input {
+            border: 1px solid transparent;
+            border-radius: 3px;
+            font-size: 14px;
+            background: var(--background-color);
+            color: var(--text-color);
+        }
+        input:focus {
+            outline: none;
+            border: 1px solid var(--input-border-color);
+            box-shadow: 0 0 0px 3px var(--input-outline-color);
+        }
+        a, a:visited { color: var(--link-color); }
+        a:hover { color: var(--link-color-hover); }
+        a:active { color: var(--link-color-focus); }
+        button {
+            font-size: 14px;
+            color: var(--text-color);
+            align-self: start;
+            margin-left: 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 3px;
+            padding: 8px 30px;
+            background: var(--button-color);
+            transition: background-color 100ms ease-out;
+        }
+        button:hover {
+            background: var(--button-color-hover);
+            transition: background-color 100ms ease-in;
+        }
+        footer {
+            margin-top: 20px;
+            padding: 20px;
+            opacity: 0.5;
+        }
+
+        .tbl {
+            padding: 12px;
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            grid-column-gap: 12px;
+            grid-row-gap: 8px;
+            align-items: start;
+            justify-items: stretch;
+        }
+        .tbl input {
+            padding: 4px 8px;
+            display: block;
+            align-self: stretch;
+        }
+        .tbl > label {
+            padding: 7px 8px 0;
+        }
+        .tbl > a {
+            padding: 7px 9px 0;
+            word-break: break-word;
+        }
+
+        #url-input {
+            padding: 4px 17px;
+            font-size: 28px;
+            line-height: 34px;
+        }
+        #btn-copy-url {
+            margin-top: 20px;
+        }
+        #url-props {
+            margin-top: 20px;
+        }
+        #url-params-head {
+            padding: 12px 20px;
+        }
+        #url-params {
+            grid-template-columns: 150px 1fr auto;
+        }
+    </style>
+    <title>URL Parser</title>
+</head>
+<body autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+<base href="dummy-proto://dummy-hostname/dummy-path/">
+<input type="text"
+       id="url-input"
+       placeholder="Paste your URL here"
+       autocomplete="off"
+       autocapitalize="off"
+       autocorrect="off"
+       spellcheck="false"
+       autofocus
+       value="https://github.com/keeweb/keeweb/issues?q=is%3Aopen+is%3Aissue+milestone%3AFuture-Plugins"
+/>
+<button id="btn-copy-url">Copy URL</button>
+<div id="url-props" class="tbl">
+    <label for="prop-protocol">Protocol</label>
+    <input id="prop-protocol">
+
+    <label for="prop-hostname">Domain name</label>
+    <input id="prop-hostname">
+
+    <label for="prop-pathname">Path</label>
+    <input id="prop-pathname">
+
+    <label for="prop-port">Port</label>
+    <input id="prop-port">
+
+    <label for="prop-anchor">Anchor</label>
+    <input id="prop-anchor">
+
+    <label for="prop-username">Username</label>
+    <input id="prop-username">
+
+    <label for="prop-password">Password</label>
+    <input id="prop-password">
+
+    <label for="prop-Link">Link</label>
+    <a id="prop-link" href="" target="_blank"></a>
+</div>
+<div id="url-params-head">Query string parameters</div>
+<div id="url-params" class="tbl"></div>
+<button id="add-url-param-btn">New parameter</button>
+
+<footer>
+    Made with ❤️ by <a href="https://antelle.net" target="_blank">Antelle</a>.
+</footer>
+
+<script>
+    const urlInput = document.getElementById('url-input');
+    const link = document.getElementById('prop-link');
+    const urlParameters = document.getElementById('url-params');
+
+    urlInput.addEventListener('input', e => {
+        e.stopPropagation();
+        parseUrl();
+    });
+    document.getElementById('add-url-param-btn').addEventListener('click', addNewUrlParameter);
+    document.addEventListener('input', buildUrl);
+    document.getElementById('btn-copy-url').addEventListener('click', () => {
+        urlInput.focus();
+        urlInput.select();
+        document.execCommand('copy');
+    });
+
+    parseUrl();
+
+    function parseUrl() {
+        link.innerText = urlInput.value;
+        link.href = urlInput.value;
+
+        const isRelative = link.protocol === 'dummy-proto:' && link.hostname === 'dummy-hostname';
+        let pathname = link.pathname;
+        if (isRelative) {
+            pathname = pathname.replace(/^\/dummy-path\//, '');
+        }
+
+        const linkProps = {
+            protocol: link.protocol === 'dummy-proto:' ? '' : link.protocol.replace(':', ''),
+            hostname: link.hostname === 'dummy-hostname' ? '' : link.hostname,
+            port: link.port,
+            pathname,
+            anchor: link.hash.replace(/^#/, ''),
+            username: link.username,
+            password: link.password
+        };
+
+        for (const [key, value] of Object.entries(linkProps)) {
+            document.getElementById(`prop-${key}`).value = value;
+        }
+
+        urlParameters.innerHTML = '';
+
+        const search = link.search.replace(/^\?/, '');
+        for (const searchItem of search.split('&')) {
+            if (!searchItem) {
+                continue;
+            }
+
+            const eqIx = searchItem.indexOf('=');
+            let name, value;
+            if (eqIx < 0) {
+                name = searchItem;
+            } else {
+                name = searchItem.substr(0, eqIx);
+                value = searchItem.substr(eqIx + 1);
+            }
+
+            addUrlParameter(name, value);
+        }
+    }
+
+    function addUrlParameter(name, value) {
+        const nameEl = document.createElement('input');
+        nameEl.value = name || '';
+        urlParameters.appendChild(nameEl);
+
+        const valueEl = document.createElement('input');
+        valueEl.value = value ? decodeURIComponent(value).replace(/\+/g, ' ') : '';
+        urlParameters.appendChild(valueEl);
+
+        const buttonEl = document.createElement('button');
+        buttonEl.innerText = 'Delete';
+        urlParameters.appendChild(buttonEl);
+
+        buttonEl.addEventListener('click', () => {
+            nameEl.remove();
+            valueEl.remove();
+            buttonEl.remove();
+            buildUrl();
+        });
+
+        return { nameEl, valueEl };
+    }
+
+    function addNewUrlParameter() {
+        const { nameEl } = addUrlParameter();
+        nameEl.focus();
+    }
+
+    function buildUrl() {
+        const protocol = document.getElementById('prop-protocol').value;
+        const hostname = document.getElementById('prop-hostname').value;
+        const pathname = document.getElementById('prop-pathname').value;
+        const port = document.getElementById('prop-port').value;
+        const anchor = document.getElementById('prop-anchor').value;
+        const username = document.getElementById('prop-username').value;
+        const password = document.getElementById('prop-password').value;
+
+        let url = '';
+        if (protocol) {
+            url += protocol + '://';
+        }
+
+        if (hostname) {
+            if (username) {
+                url += username;
+                if (password) {
+                    url += ':' + password;
+                }
+                url += '@';
+            }
+            if (!protocol) {
+                url += '//';
+            }
+            url += hostname;
+        }
+
+        if (port) {
+            url += ':' + port;
+        }
+
+        if (pathname) {
+            if (url && !pathname.startsWith('/')) {
+                url += '/';
+            }
+            url += pathname;
+        }
+
+        const urlParams = [];
+        for (const el of document.querySelectorAll('#url-params input:nth-of-type(odd)')) {
+            const name = el.value || '';
+            const value = el.nextSibling.value || '';
+            urlParams.push({ name, value });
+        }
+
+        if (urlParams.length) {
+            url += '?' + urlParams
+                .map(({ name, value }) =>
+                    name +
+                    (value ? '=' + encodeURIComponent(value).replace(/%20/g, '+') : '')
+                )
+                .join('&');
+        }
+
+        if (anchor) {
+            url += '#' + anchor;
+        }
+
+        urlInput.value = url;
+    }
+</script>
+</body>
+</html>
