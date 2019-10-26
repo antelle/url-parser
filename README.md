@@ -11,7 +11,7 @@ This is a tool that allows you to parse and change URL parts:
 
 ## Link
 
-See it in action: [antelle.net/url-parser](https://antelle.net/url-parser)
+See it in action: [antelle.net/url-parser](https://antelle.net/url-parser/)
 
 ## References
 
