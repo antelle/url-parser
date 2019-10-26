@@ -301,7 +301,7 @@
             url += '?' + urlParams
                 .map(({ name, value }) =>
                     name +
-                    (value ? '=' + encodeURIComponent(value).replace(/%20/g, '+') : '')
+                    (value ? '=' + encodeURIComponent(value) : '')
                 )
                 .join('&');
         }
