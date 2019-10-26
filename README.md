@@ -16,4 +16,4 @@ This is a tool that allows you to parse and change URL parts:
 
 ## License
 
-MIT
+[MIT](LICENSE.md)
